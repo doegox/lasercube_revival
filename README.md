@@ -65,9 +65,11 @@ screen /dev/ttyUSB0 115200
 ```
 
 ### Connect
-According to `config.h`:
-Old Grbl versions: `screen /dev/ttyUSB0 9600`  
+Baudrate configured in `config.h`
 New Grbl versions: `screen /dev/ttyUSB0 115200`
+
+### [Old Grbl versions](notes_old_grbl.md)
+
 
 ### Grbl v1.1
 
@@ -75,7 +77,6 @@ From https://github.com/gnea/grbl
 
 * https://github.com/gnea/grbl/wiki/Connecting-Grbl
   * **Beware:** Grbl v0.8 (and Laser Cube PCB) use D12 for laser control while new Grbl 0.9+ use D11 to allow PWM. Comment `//#define VARIABLE_SPINDLE` on Grbl 0.9+ to enable old mapping with D12.
-
 * https://github.com/gnea/grbl/wiki/Grbl-v1.1-Laser-Mode
   * Only when using D11 and `VARIABLE_SPINDLE`
   * To Enable: Send Grbl a `$32=1` command.
@@ -87,51 +88,52 @@ From https://github.com/gnea/grbl
   * Example: G0 M3 S1000 will not turn on the laser, but will set the laser modal state to M3 enabled and power of S1000. A following G1 command will then immediately be set to M3 and S1000.
 * https://github.com/gnea/grbl/wiki/Two-Axis-System-Considerations
   * Notes to disable Z, makes only sense if we install X/Y endstops...
-
-**So far, tests failed:**
-  * On `G0 X1`, X axis moves very briefly, then Arduino is totally unresponsive, ctrl-x fails, must be hard reset.
-
-Trying to get back to an older version to get sth working...
-
-### Grbl v0.7 test
-
-From https://github.com/grbl/grbl
+* https://github.com/gnea/grbl/wiki/Grbl-v1.1-Interface
+  * Interface protocol
+  * ctrl-x for soft reset
+* https://github.com/gnea/grbl/wiki/Grbl-v1.1-Configuration
+  * For `$` settings
 
 ```
-git checkout -b v0_6 origin/v0_6
-make
--> compilation error
-```
-
-### Grbl v0.7 test
-
-From https://github.com/grbl/grbl
-
-```
-git checkout -b v0_7 origin/v0_7
+# At time of writing, master is 3 minor commits above tag v1.1h.20190825
+git checkout master
+# enable old D12 laser control pin assignment
+sed -i '/^#define.VARIABLE_SPINDLE/s#^#//#' grbl/config.h
+make clean
 make
 avrdude -c arduino -P /dev/ttyUSB0 -b 57600 -p atmega328p -B 10 -U flash:w:grbl.hex:i
-screen /dev/ttyUSB0 9600
-
-$0 = 400.000 (steps/mm x)
-$1 = 400.000 (steps/mm y)
-$2 = 400.000 (steps/mm z)
-$3 = 30 (microseconds step pulse)
-$4 = 480.000 (mm/min default feed rate)
-$5 = 480.000 (mm/min default seek rate)
-$6 = 0.100 (mm/arc segment)
-$7 = 0 (step port invert mask. binary = 0)
-$8 = 25.000 (acceleration in mm/sec^2)
-$9 = 0.050 (cornering junction deviation in mm)
-
-G0 X3 Y3
-G0 X0 Y0
+screen /dev/ttyUSB0 115200
+$RST=*
+$$
+$3=1
+$100=72
+$101=72
+$110=300
+$111=300
+$120=100
+$121=100
 ```
-It moves !!
+
+* `$3=1` to invert X axis direction
+* `$100=72` and `$101=72` X \& Y axis steps/mm (empirical)
+* `$110=300` and `$111=300` mm/sec: max speed (and G0 feed). At 400-500, Y axis makes noise in one direction
+* `$120=100` and `$121=100` mm/sec^2: acceleration can be high as we always use slow speeds
+
+Homing: (0,0) in the left bottom of the material -> using only positive positions
+
+* Focus your laser on the target material
+* Gently use your hand push the X axis to the end of *left* hand side. 
+* The Y is *pushed* all the way to the back away from you. 
+* Issue `G92 X0 Y0` to set the zero
+
+Streaming gcode: using script from [this Github issue](https://github.com/gnea/grbl/issues/899#issuecomment-669795947), [local copy](examples/gcodestreamer.py)
+
+```
+examples/gcodestreamer.py -p /dev/ttyUSB0 -f examples/rocket.gcode
+```
+[Examples](examples) are from the original Laser Cube examples, but converted to positive positions and completed with zero positioning and G1 feed setting.
 
 ## TODO
 
 * Add a jumper to swap between D12 and D11 for laser and enable Grbl v0.9+ PWM?
 * Can existing laser be driven at 12V ?
-* Seems to many steps per mm... Try Pocket Laser Engraver config ?
-* See how to configure recent Grbl versions...
