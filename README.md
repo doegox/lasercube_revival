@@ -44,29 +44,13 @@ Even if the Laser Cube was supposed to be open source, we didn't find any schema
   * **D13** to connect Arduino D13 and GND (can be used by Grbl as spindle direction/enable pin or coolant pin)
   * **X+/X-/Y+/Y-/Z+/Z-** to connect Arduino D9 and GND for normally-open endstops
 
+After cross-checking with Grbl `config.h`, it appears that the Laser Cube PCB follows the default pinout, but in its older version where laser is controlled via D12, while modern Grbl drives it through D11 to get PWM.
+
 ## Grbl
 
 So the Grbl versions used for the Laser Cube seem to be now at https://github.com/grbl/grbl/ while more recent versions are available at https://github.com/gnea/grbl .
 
 Some G-Code explanations are available on [Shapeoko wiki](https://wiki.shapeoko.com/index.php/G-Code)
-
-### Compilation
-
-See https://github.com/gnea/grbl/wiki/Compiling-Grbl
-
-* Edit `config.h`, possibly removing `cpu_map.h` and `defaults.h` includes and copying them at the end of `config.h` if they need tuning.
-* Install `avr-gcc` and `arduino` packages
-
-```
-make clean
-make grbl.hex
-avrdude -c arduino -P /dev/ttyUSB0 -b 57600 -p atmega328p -B 10 -U flash:w:grbl.hex:i
-screen /dev/ttyUSB0 115200
-```
-
-### Connect
-Baudrate configured in `config.h`
-New Grbl versions: `screen /dev/ttyUSB0 115200`
 
 ### [Old Grbl versions](notes_old_grbl.md)
 
@@ -75,6 +59,10 @@ New Grbl versions: `screen /dev/ttyUSB0 115200`
 
 From https://github.com/gnea/grbl
 
+* https://github.com/gnea/grbl/wiki/Compiling-Grbl
+  * Install `avr-gcc` and `arduino` packages
+  * Usage baudrate is configured in `config.h`, 115200 for v1.1h
+  * Flashing baudrate is 57600
 * https://github.com/gnea/grbl/wiki/Connecting-Grbl
   * **Beware:** Grbl v0.8 (and Laser Cube PCB) use D12 for laser control while new Grbl 0.9+ use D11 to allow PWM. Comment `//#define VARIABLE_SPINDLE` on Grbl 0.9+ to enable old mapping with D12.
 * https://github.com/gnea/grbl/wiki/Grbl-v1.1-Laser-Mode
@@ -94,8 +82,8 @@ From https://github.com/gnea/grbl
 * https://github.com/gnea/grbl/wiki/Grbl-v1.1-Configuration
   * For `$` settings
 
+At time of writing, master is 3 minor commits above tag v1.1h.20190825
 ```
-# At time of writing, master is 3 minor commits above tag v1.1h.20190825
 git checkout master
 # enable old D12 laser control pin assignment
 sed -i '/^#define.VARIABLE_SPINDLE/s#^#//#' grbl/config.h
