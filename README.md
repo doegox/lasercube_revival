@@ -114,14 +114,51 @@ Homing: (0,0) in the left bottom of the material -> using only positive position
 * The Y is *pushed* all the way to the back away from you. 
 * Issue `G92 X0 Y0` to set the zero
 
-Streaming gcode: using script from [this Github issue](https://github.com/gnea/grbl/issues/899#issuecomment-669795947), [local copy](examples/gcodestreamer.py)
+## Tips
+
+Surface is slippery and when Y axis moves, material may shift. Fix material or use e.g. a rubber sheet.
+
+Online GCode preview : https://ncviewer.com/
+
+[Examples](examples) are from the original Laser Cube examples, but converted to positive positions and completed with zero positioning and G1 feed setting. *Tests ongoing*
+
+## Enabling PWM laser mode
+
+Recent Grbl supports PWM but this requires some changes on the PCB.
+To allow both old and new modes, we will add a jumper to wire the laser MOSFET gate to either D12 or D11. This requires cutting the track starting from D12 and scratching the track below and above the cut..
+
+<img src="pictures/d11d12a.jpg" height=200><img src="pictures/d11d12b.jpg" height=200><img src="pictures/d11d12c.jpg" height=200><img src="pictures/d11d12d.jpg" height=200>
+
+Make sure to test with a multimeter that there is no remaining bridge in the cut between D12 and laser track.
+
+Now depending on the jumper position, we can try the new mode (jumper positioned across the PCB board).
+
+This requires recompiling the firmware with `VARIABLE_SPINDLE` defined.
 
 ```
-examples/gcodestreamer.py -p /dev/ttyUSB0 -f examples/rocket.gcode
+git checkout master
+# enable new D11 laser control pin assignment
+sed -i '/^\/\/#define.VARIABLE_SPINDLE/s#^\/\/##' grbl/config.h
+make clean
+make
+avrdude -c arduino -P /dev/ttyUSB0 -b 57600 -p atmega328p -B 10 -U flash:w:grbl.hex:i
+screen /dev/ttyUSB0 115200
+$RST=*
+$$
+$3=1
+$100=72
+$101=72
+$110=300
+$111=300
+$120=100
+$121=100
+$32=1
 ```
-[Examples](examples) are from the original Laser Cube examples, but converted to positive positions and completed with zero positioning and G1 feed setting.
+Last line is new and is there to activate the laser mode.
+
+See https://github.com/gnea/grbl/wiki/Grbl-v1.1-Laser-Mode for usage
 
 ## TODO
 
-* Add a jumper to swap between D12 and D11 for laser and enable Grbl v0.9+ PWM?
 * Can existing laser be driven at 12V ?
+
