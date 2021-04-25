@@ -114,14 +114,6 @@ Homing: (0,0) in the left bottom of the material -> using only positive position
 * The Y is *pushed* all the way to the back away from you. 
 * Issue `G92 X0 Y0` to set the zero
 
-## Tips
-
-Surface is slippery and when Y axis moves, material may shift. Fix material or use e.g. a rubber sheet.
-
-Online GCode preview : https://ncviewer.com/
-
-[Examples](examples) are from the original Laser Cube examples, but converted to positive positions and completed with zero positioning and G1 feed setting. *Tests ongoing*
-
 ## Enabling PWM laser mode
 
 Recent Grbl supports PWM but this requires some changes on the PCB.
@@ -148,17 +140,28 @@ $$
 $3=1
 $100=72
 $101=72
-$110=300
-$111=300
-$120=100
-$121=100
+$110=4000
+$111=4000
+$120=1500
+$121=1500
 $32=1
 ```
 Last line is new and is there to activate the laser mode.
 
 See https://github.com/gnea/grbl/wiki/Grbl-v1.1-Laser-Mode for usage
 
-## TODO
+## Misc
 
-* Can existing laser be driven at 12V ?
+Surface is slippery and when Y axis moves, material may shift. Fix material or use e.g. a rubber sheet.
 
+Online GCode preview : https://ncviewer.com/
+
+[Examples](examples) are from the original Laser Cube examples, but converted to positive positions and completed with zero positioning and G1 feed setting. *Tests ongoing*
+
+It seems to misbehave when powered at 12V and there is no voltage indication on the laser module.
+
+If seems to reach its max power already at about S100 (10\%) rather than S1000.
+
+Pitch is about 0.15 mm.
+
+It seems to have an important backlash, 0.35 mm on X axis.
